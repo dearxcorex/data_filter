@@ -1,0 +1,30 @@
+# Ignore credentials
+credentials.json
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+web_fm/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDE
+.idea/
+.vscode/

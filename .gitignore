@@ -5,6 +5,7 @@ credentials.json
 *.key
 
 # Python
+.DS_Store
 __pycache__/
 web_fm/
 build/

@@ -3,12 +3,9 @@ import pandas as pd
 import folium
 from streamlit_folium import folium_static
 from datetime import datetime
-
-
 import gspread
 from google.oauth2.service_account import Credentials
 
-# Configure Google Sheets connection
 @st.cache_resource
 def connect_to_gsheet():
     scope = [
@@ -19,65 +16,64 @@ def connect_to_gsheet():
     client = gspread.authorize(credentials)
     return client
 
+def show_statisticsshow_dashboard(df):
+    # Create three columns for statistics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        total_stations = len(df)
+        st.metric(
+            label="จำนวนสถานีทั้งหมด",
+            value=total_stations
+        )
+        
+    with col2:
+        inspected = len(df[df['สถานะ'] == 'ตรวจแล้ว'])
+        st.metric(
+            label="ตรวจแล้ว ปี 2568",
+            value=inspected,
+            delta=f"{(inspected/len(df)*100):.1f}%"
+        )
+        
+    with col3:
+        not_inspected = len(df[df['สถานะ'] == 'ยังไม่ตรวจ'])
+        st.metric(
+            label="ยังไม่ได้ตรวจ ปี 2568",
+            value=not_inspected,
+            delta=f"{(not_inspected/len(df)*100):.1f}%"
+        )
+
+    # Add province-wise statistics
+    st.subheader("สถิติรายจังหวัดสถานีที่ตรวจแล้ว")
+    province_stats = df.groupby('จังหวัด').agg({
+        'ชื่อสถานี': 'count',
+        'สถานะ': lambda x: (x == 'ตรวจแล้ว').sum()
+    }).reset_index()
+    province_stats.columns = ['จังหวัด', 'จำนวนสถานีทั้งหมด', 'จำนวนที่ตรวจแล้ว']
+    province_stats['ร้อยละที่ตรวจแล้ว'] = (province_stats['จำนวนที่ตรวจแล้ว'] / province_stats['จำนวนสถานีทั้งหมด'] * 100).round(1)
+    st.dataframe(province_stats, use_container_width=True)
 
 
+    # # Display province statistics
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Add a chart showing inspection progress
+        st.subheader("ความคืบหน้าการตรวจสอบ")
+        progress = (inspected / total_stations)
+        st.progress(progress)
+        st.write(f"ความคืบหน้า: {progress:.1%}")
 def main():
-    st.title('Fm Radio Stations Monitoring System')
+    st.title('FM Radio Stations Dashboard')
 
+    # Get data
     client = connect_to_gsheet()
     sheet = client.open('FM_Radio_Stations').worksheet('Sheet_1')
     df = pd.DataFrame(sheet.get_all_records())
 
+    # Show dashboard
+    show_statisticsshow_dashboard(df)
 
-    st.sidebar.header('Filter Data')
-    provinces = ['ALL'] + sorted(df['จังหวัด'].unique().tolist())
-    selected_province = st.sidebar.selectbox('Select Province', provinces)
-
-    districes = ['ALL'] + sorted(df['อำเภอ'].unique().tolist())
-    selected_district = st.sidebar.selectbox('Select District (อำเภอ)', districes,index=0)
-
-    #add inspection status 
-    st.sidebar.subheader('Inspection Unwanted Emissions Status')
-    show_inspected = st.sidebar.checkbox('ตรวจปี 2567 แล้ว', value=True)
-    show_not_inspected = st.sidebar.checkbox('ยังไม่ได้ตรวจ', value=True)
-    show_pending = st.sidebar.checkbox('รอตรวจ', value=True)
-
-    filtered_df = df.copy()
-    if selected_province != 'ALL':
-        filtered_df = filtered_df[filtered_df['จังหวัด'] == selected_province]
-    if selected_district != 'ALL':
-        filtered_df = filtered_df[filtered_df['อำเภอ'] == selected_district]
-    st.dataframe(filtered_df)
-
-
-    st.caption('ตรวจการแพร่แปลกปลอม')
-    status_conditions = []
-    if show_inspected:
-        status_conditions.append(filtered_df['ตรวจการแพร่แปลกปลอม'] == 'ตรวจปี 2567 แล้ว')
-    if show_not_inspected:
-        status_conditions.append(filtered_df['ตรวจการแพร่แปลกปลอม'] == 'ยังไม่ตรวจ')
-    if show_pending:
-        status_conditions.append(filtered_df['ตรวจการแพร่แปลกปลอม'].isna())
-
-    
-    if status_conditions:
-        filtered_df = filtered_df[pd.concat(status_conditions, axis=1).any(axis=1)]
-
-    st.dataframe(filtered_df)
-
-    #show statistics
-    st.subheader('Statistics')
-    total_stations = len(filtered_df)
-    st.sidebar.write(f'จำนวนสถานีทั้งหมด: {total_stations}')
-    if total_stations > 0:
-        inspected = len(filtered_df[filtered_df['ตรวจการแพร่แปลกปลอม'] == 'ตรวจปี 2567 แล้ว'])
-        not_inspected = len(filtered_df[filtered_df['ตรวจการแพร่แปลกปลอม'] == 'ยังไม่ตรวจ'])
-
-
-        st.sidebar.write(f'จำนวนสถานีที่ตรวจปี 2567 แล้ว: {inspected}')
-        st.sidebar.write(f'จำนวนสถานีที่ยังไม่ตรวจ: {not_inspected}')
 
 if __name__ == '__main__':
     main()
-
-

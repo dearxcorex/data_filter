@@ -1,20 +1,7 @@
 import streamlit as st
-import pandas as pd
-import folium
-from streamlit_folium import folium_static
-from datetime import datetime
-import gspread
-from google.oauth2.service_account import Credentials
+import plotly.express as px
+from utils import load_data
 
-@st.cache_resource
-def connect_to_gsheet():
-    scope = [
-        'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/drive'
-    ]
-    credentials = Credentials.from_service_account_file('credentials.json', scopes=scope)
-    client = gspread.authorize(credentials)
-    return client
 
 def show_statisticsshow_dashboard(df):
     # Create three columns for statistics
@@ -63,17 +50,64 @@ def show_statisticsshow_dashboard(df):
         progress = (inspected / total_stations)
         st.progress(progress)
         st.write(f"ความคืบหน้า: {progress:.1%}")
+
+
+
+def show_visualization(filtered_df):
+    st.subheader("📊 Data Visualization")
+
+    # Visualization type selector
+    viz_type = st.selectbox(
+        "Select Visualization Type",
+        [ "District Summary", "Inspection Summary"]
+    )
+
+    if not filtered_df.empty:
+        if viz_type == "District Summary":
+            district_stats = filtered_df.groupby(['จังหวัด', 'อำเภอ']).agg({
+                'ชื่อสถานี': 'count',
+                'สถานะ': lambda x: (x == 'ตรวจแล้ว').sum()
+            }).reset_index()
+            district_stats.columns = ['จังหวัด', 'อำเภอ', 'จำนวนสถานีทั้งหมด', 'จำนวนที่ตรวจแล้ว'] 
+            district_stats['ร้อยละที่ตรวจแล้ว'] = (district_stats['จำนวนที่ตรวจแล้ว'] / district_stats['จำนวนสถานีทั้งหมด'] * 100).round(1)
+            st.dataframe(district_stats, use_container_width=True)
+
+            fig = px.bar(
+                district_stats,
+                x='อำเภอ',
+                y='จำนวนสถานีทั้งหมด',
+                color='ร้อยละที่ตรวจแล้ว',
+                facet_col='จังหวัด',
+                facet_col_wrap=2,  # Number of columns in the facet grid
+                title='สรุปจำนวนสถานีรายอำเภอ',
+                color_continuous_scale='RdYlGn',
+                height=700,  # Adjust height as needed
+              
+            )
+            fig.update_xaxes(tickangle=45)
+            fig.update_layout(
+                showlegend=True,
+                margin = dict(t=100,l=50,r=50,b=100)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            status_count = filtered_df['สถานะ'].value_counts()
+            fig = px.pie(
+                values=status_count.values,
+                names=status_count.index,
+                title='สัดส่วนสถานะการตรวจสอบสถานี',
+                hole=0.4
+            )
+            st.plotly_chart(fig, use_container_width=True)
 def main():
     st.title('FM Radio Stations Dashboard')
 
     # Get data
-    client = connect_to_gsheet()
-    sheet = client.open('FM_Radio_Stations').worksheet('Sheet_1')
-    df = pd.DataFrame(sheet.get_all_records())
+    df = load_data()
 
     # Show dashboard
     show_statisticsshow_dashboard(df)
-
+    show_visualization(df)
 
 if __name__ == '__main__':
     main()

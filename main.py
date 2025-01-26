@@ -3,8 +3,56 @@ import plotly.express as px
 from utils import load_data
 from datetime import datetime
 
+
+
+# Set page config at the very start of your script
+st.set_page_config(
+    page_title="ระบบติดตามสถานีวิทยุ FM",  # Browser tab title
+    page_icon="📻",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Hide default menu
+hide_menu_style = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        </style>
+        """
+st.markdown(hide_menu_style, unsafe_allow_html=True)
+
+# Customize sidebar title
+st.sidebar.markdown("""
+    <style>
+        [data-testid=stSidebar] [data-testid=stMarkdownContainer] {
+            padding-top: 0rem;
+        }
+        .sidebar-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            padding: 1rem 0;
+            text-align: center;
+            border-bottom: 2px solid #f0f2f6;
+            margin-bottom: 1rem;
+        }
+    </style>
+    <div class="sidebar-title">📻 ระบบติดตามสถานีวิทยุ FM</div>
+    """, unsafe_allow_html=True)
+
+# Rename pages in sidebar
+st.sidebar.markdown("""
+    <style>
+        section[data-testid="stSidebar"] .css-17lntkn {
+            display: none;
+        }
+        section[data-testid="stSidebar"] .css-pkbazv {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 def add_refresh_section():
-    st.sidebar.markdown('---')
+    # st.sidebar.markdown('---')
     col1,col2 = st.sidebar.columns([2,1])
 
     with col1:

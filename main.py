@@ -1,9 +1,24 @@
 import streamlit as st
 import plotly.express as px
 from utils import load_data
+from datetime import datetime
 
+def add_refresh_section():
+    st.sidebar.markdown('---')
+    col1,col2 = st.sidebar.columns([2,1])
+
+    with col1:
+        st.markdown(f"🔄 ข้อมูลอัพเดทล่าสุด: {datetime.now().strftime('%H:%M:%S')}")
+
+    with col2:
+        if st.button('🔄 รีเฟรช'):
+            st.cache_data.clear()
+            st.rerun()
 
 def show_statisticsshow_dashboard(df):
+
+    add_refresh_section()
+
     # Create three columns for statistics
     col1, col2, col3 = st.columns(3)
     

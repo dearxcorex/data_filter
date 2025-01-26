@@ -1,0 +1,15 @@
+/* Custom styles for the location marker */
+.custom-location-marker {
+    background-color: #4285F4;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    border: 3px solid white;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.location-accuracy {
+    border: 2px solid #4285F4;
+    border-radius: 50%;
+    opacity: 0.2;
+}

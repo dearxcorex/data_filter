@@ -1,9 +1,12 @@
 import streamlit as st
 import pandas as pd
 import folium
-from streamlit_folium import folium_static
+from streamlit_folium import st_folium
 import plotly.express as px
 from utils import load_data  # Import the utility function
+
+from folium import plugins
+import streamlit.components.v1 as components
 
 
 
@@ -12,26 +15,90 @@ from utils import load_data  # Import the utility function
 
 
 def show_map_visualization(df):
-    st.subheader("🗺️ แผนที่แสดงสถานีวิทยุ 3 จังหวัด")
+
+        # Create a styled legend
+    legend_html = """
+    <style>
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .circle {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: inline-block;
+        }
+    </style>
+    
+    <div style="font-family: 'Sarabun', sans-serif;">
+        <div class="legend-item">
+            <span class="circle" style="background-color: green;"></span>
+            <span>✅ สถานีที่ยื่นคำขอและตรวจแล้ว</span>
+        </div>
+        <div class="legend-item">
+            <span class="circle" style="background-color: red;"></span>
+            <span>⏳ สถานีที่ยื่นคำขอแต่ยังไม่ได้ตรวจ</span>
+        </div>
+        <div class="legend-item">
+            <span class="circle" style="background-color: black;"></span>
+            <span>⚠️ สถานีที่ไม่ยื่นคำขอและยังไม่ได้ตรวจ</span>
+        </div>
+        <div class="legend-item">
+            <span class="circle" style="background-color: blue;"></span>
+            <span>📋 สถานีที่ไม่ยื่นคำขอแต่ตรวจแล้ว</span>
+        </div>
+    </div>
+    """
+    
+    st.sidebar.markdown(legend_html, unsafe_allow_html=True)
+    
+  
 
 
   
     
     m = folium.Map(
         location=[15.0000, 102.0000],
-        zoom_start=8,
+        zoom_start=5,
         tiles ='CartoDB positron',
         )
     
+    plugins.LocateControl(
+        auto_start=True,
+        KeepCurrentZoomLevel=True,
+        strings={'title':'ตำแหน่งของคุณ'},
+        position="topleft",
+        flyTo=True,
+        drawCircle=True,
+        showPopup=True,
+        locate_options={
+            'enableHighAccuracy':True,
+            'watch':True,
+            'timeout':5000,
+            'maximumAge':0,
+            'setView':True,
+        }
+    ).add_to(m)
 
+    plugins.FloatImage(
+        'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/compass.png',
+        position='topleft'
+    ).add_to(m)
     #create marker cluster
     inspected_cluster = folium.FeatureGroup(name='✅ ตรวจแล้ว')
     not_inspected_cluster = folium.FeatureGroup(name='⏳ ยังไม่ตรวจ')
+    not_apply_cluster = folium.FeatureGroup(name='🔍 ไม่ยื่นคำขอตรวจแล้ว')
+    not_apply_cluster_2 = folium.FeatureGroup(name='🔍 ไม่ยื่นคำขอยังไม่ตรวจ')
 
 
     #add markers
     for idx,row in df.iterrows():
         if pd.notna(row['ละติจูด']) and pd.notna(row['ลองจิจูด']):
+            lat,lon = float(row['ละติจูด']),float(row['ลองจิจูด'])
+            google_maps_link = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
             popup_content = f"""
             <div style="font-family:'Sarabun', sans-serif; font-size:14px;">
             <b>ชื่อสถานี:</b> {row['ชื่อสถานี']}<br>
@@ -39,16 +106,37 @@ def show_map_visualization(df):
             <b>จังหวัด:</b> {row['จังหวัด']}<br>
             <b>อำเภอ:</b> {row['อำเภอ']}<br>
             <b>สถานะ:</b> {row['สถานะ']}
+            <br>
+            <a href="{google_maps_link}" target="_blank" style="
+                background-color: #4285F4;
+                color: white;
+                padding: 8px 12px;
+                text-decoration: none;
+                border-radius: 4px;
+                display: inline-block;
+                margin-top: 5px;
+            ">
+            🚗 นำทาง
+            </a>
+
             </div>
             """
 
-            if row['สถานะ'] == 'ตรวจแล้ว':
-                icon_color = 'green'
-                marker_group = inspected_cluster
-            else:
+            
+            if row['ยื่นคำขอ'] == 'ไม่ยื่น' and row['สถานะ'] == 'ยังไม่ตรวจ':
+                icon_color = 'black'
+                marker_group = not_apply_cluster_2
+            elif row['ยื่นคำขอ'] == 'ไม่ยื่น' and row['สถานะ'] == 'ตรวจแล้ว':
+                icon_color = 'blue'
+                marker_group = not_apply_cluster
+            elif row['สถานะ'] == 'ยังไม่ตรวจ':
                 icon_color = 'red'
                 marker_group = not_inspected_cluster
-
+            elif row['สถานะ'] == 'ตรวจแล้ว':
+                icon_color = 'green'
+                marker_group = inspected_cluster
+            
+            
             folium.CircleMarker(
                 location=[row['ละติจูด'], row['ลองจิจูด']],
                 radius=8,
@@ -64,38 +152,32 @@ def show_map_visualization(df):
 
     inspected_cluster.add_to(m)
     not_inspected_cluster.add_to(m)
+    not_apply_cluster.add_to(m)
+    not_apply_cluster_2.add_to(m)
     folium.LayerControl().add_to(m)
     folium.LatLngPopup().add_to(m)
-     # Display map
-    try:
-        folium_static(m)
-    except Exception as e:
-        st.error(f"Error displaying map: {str(e)}")
-    #Statistics
-    # col1, col2 = st.columns(2)
+    
+    #add fullscreen button
+    plugins.Fullscreen(
+        position='topleft',
+        title='Full Screen',
+        title_cancel='Exit Full Screen',
+        force_separate_button=True,
+    ).add_to(m)
 
-    # with col1:
-    #         st.subheader("📊 สรุปรายจังหวัด")
-    #         province_summary = df.groupby('จังหวัด').agg({
-    #             'ชื่อสถานี': 'count',
-    #             'สถานะ': lambda x: (x == 'ตรวจแล้ว').sum()
-    #         }).reset_index()
-            
-    #         province_summary.columns = ['จังหวัด', 'จำนวนสถานีทั้งหมด', 'จำนวนที่ตรวจแล้ว']
-    #         province_summary['ร้อยละที่ตรวจแล้ว'] = (province_summary['จำนวนที่ตรวจแล้ว'] / province_summary['จำนวนสถานีทั้งหมด'] * 100).round(1)
-    #         st.dataframe(province_summary, use_container_width=True)
+    #Display map
+    st_map = st_folium(
+        m, 
+        width= 1000,
+        height=700,
+        returned_objects=['last_clicked',"last_object_clicked"],
+        use_container_width=True,
+        )
 
-    # with col2:
-    #     st.subheader("📈 สัดส่วนการตรวจสอบ")
-    #     status_counts = df['สถานะ'].value_counts()
-    #     fig = px.pie(
-    #         values=status_counts.values,
-    #         names=status_counts.index,
-    #         title='สัดส่วนสถานะการตรวจสอบ',
-    #         hole=0.4,
-    #         color_discrete_map={'ตรวจแล้ว': '#00CC96', 'ยังไม่ตรวจ': '#EF553B'}
-    #     )
-    #     st.plotly_chart(fig, use_container_width=True)
+
+
+
+
 
 
 def main():

@@ -93,6 +93,15 @@ def show_statisticsshow_dashboard(df):
             delta=f"{(not_inspected/len(df)*100):.1f}%"
         )
 
+    #Add sidebar statistics 
+    st.sidebar.markdown("---")
+    not_applied = len(df[df['ยื่นคำขอ'] == 'ไม่ยื่น'])
+    st.sidebar.write(f"จำนวนที่ไม่ยื่น: {not_applied}")
+
+    #Option: Add percentage 
+    not_applied_percentage = (not_applied/len(df)*100)
+    st.sidebar.write(f"ร้อยละที่ไม่ยื่น: {not_applied_percentage:.1f}%")
+
     # Add province-wise statistics
     st.subheader("สถิติรายจังหวัดสถานีที่ตรวจแล้ว")
     province_stats = df.groupby('จังหวัด').agg({
@@ -129,39 +138,13 @@ def show_visualization(filtered_df):
         if viz_type == "District Summary":
             district_stats = filtered_df.groupby(['จังหวัด', 'อำเภอ']).agg({
                 'ชื่อสถานี': 'count',
+                'ยื่นคำขอ': lambda x: (x == 'ไม่ยื่น').sum(),
                 'สถานะ': lambda x: (x == 'ตรวจแล้ว').sum()
             }).reset_index()
-            district_stats.columns = ['จังหวัด', 'อำเภอ', 'จำนวนสถานีทั้งหมด', 'จำนวนที่ตรวจแล้ว'] 
-            district_stats['ร้อยละที่ตรวจแล้ว'] = (district_stats['จำนวนที่ตรวจแล้ว'] / district_stats['จำนวนสถานีทั้งหมด'] * 100).round(1)
+            district_stats.columns = ['จังหวัด', 'อำเภอ', 'จำนวนสถานีทั้งหมด','จำนวนที่ไม่ยื่น','จำนวนที่ตรวจแล้ว' ] 
+            # district_stats['ร้อยละที่ตรวจแล้ว'] = (district_stats['จำนวนที่ตรวจแล้ว'] / district_stats['จำนวนสถานีทั้งหมด'] * 100).round(1)
             st.dataframe(district_stats, use_container_width=True)
 
-            fig = px.bar(
-                district_stats,
-                x='อำเภอ',
-                y='จำนวนสถานีทั้งหมด',
-                color='ร้อยละที่ตรวจแล้ว',
-                facet_col='จังหวัด',
-                facet_col_wrap=2,  # Number of columns in the facet grid
-                title='สรุปจำนวนสถานีรายอำเภอ',
-                color_continuous_scale='RdYlGn',
-                height=700,  # Adjust height as needed
-              
-            )
-            fig.update_xaxes(tickangle=45)
-            fig.update_layout(
-                showlegend=True,
-                margin = dict(t=100,l=50,r=50,b=100)
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            status_count = filtered_df['สถานะ'].value_counts()
-            fig = px.pie(
-                values=status_count.values,
-                names=status_count.index,
-                title='สัดส่วนสถานะการตรวจสอบสถานี',
-                hole=0.4
-            )
-            st.plotly_chart(fig, use_container_width=True)
 def main():
     st.title('FM Radio Stations Dashboard')
 

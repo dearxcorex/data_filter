@@ -1,3 +1,4 @@
+import folium.plugins
 import streamlit as st
 import pandas as pd
 import folium
@@ -64,29 +65,34 @@ def show_map_visualization(df):
         location=[15.0000, 102.0000],
         zoom_start=5,
         tiles ='CartoDB positron',
+        prefer_canvas=True,
         )
     
+
+
+    #add smooth zoom control
+    # folium.plugins.SmoothWheelZoom().add_to(m)
+
     plugins.LocateControl(
-        auto_start=True,
+        auto_start=False,
         KeepCurrentZoomLevel=True,
         strings={'title':'ตำแหน่งของคุณ'},
         position="topleft",
-        flyTo=True,
+        flyTo=False,
         drawCircle=True,
         showPopup=True,
         locate_options={
             'enableHighAccuracy':True,
             'watch':True,
-            'timeout':5000,
+            'timeout':10000,
             'maximumAge':0,
-            'setView':True,
+            'setView':'untilPan',
         }
     ).add_to(m)
 
-    plugins.FloatImage(
-        'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/compass.png',
-        position='topleft'
-    ).add_to(m)
+
+
+
     #create marker cluster
     inspected_cluster = folium.FeatureGroup(name='✅ ตรวจแล้ว')
     not_inspected_cluster = folium.FeatureGroup(name='⏳ ยังไม่ตรวจ')
@@ -165,15 +171,17 @@ def show_map_visualization(df):
         force_separate_button=True,
     ).add_to(m)
 
+ 
+
     #Display map
     st_map = st_folium(
         m, 
         width= 1000,
         height=700,
-        returned_objects=['last_clicked',"last_object_clicked"],
+        returned_objects=['last_clicked'],
         use_container_width=True,
+        key='main_map',
         )
-
 
 
 
@@ -204,11 +212,16 @@ def main():
             ['ตรวจแล้ว', 'ยังไม่ตรวจ'],
             default=['ตรวจแล้ว', 'ยังไม่ตรวจ']
         )
-        
+        status_filter_67 = st.sidebar.multiselect(
+            'สถานะการตรวจสอบปี 67',
+            ['ตรงตามมาตรฐาน', 'ยังไม่ตรวจ'],
+            default=['ตรงตามมาตรฐาน', 'ยังไม่ตรวจ']
+        )
         # Apply filters
         map_df = filtered_df[
             (filtered_df['จังหวัด'].isin(selected_provinces)) &
-            (filtered_df['สถานะ'].isin(status_filter))
+            (filtered_df['สถานะ'].isin(status_filter)) &
+            (filtered_df['ตรวจสอบมาตรฐาน 2567'].isin(status_filter_67))
         ]
         
         if not map_df.empty:

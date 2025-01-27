@@ -119,7 +119,7 @@ def show_statisticsshow_dashboard(df):
     with col1:
         # Add a chart showing inspection progress
         st.subheader("ความคืบหน้าการตรวจสอบ")
-        progress = (inspected / total_stations)
+        progress = (inspected / 200)
         st.progress(progress)
         st.write(f"ความคืบหน้า: {progress:.1%}")
 

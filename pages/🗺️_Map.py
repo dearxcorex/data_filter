@@ -210,12 +210,12 @@ def main():
         status_filter = st.sidebar.multiselect(
             'สถานะการตรวจสอบ',
             ['ตรวจแล้ว', 'ยังไม่ตรวจ'],
-            default=['ตรวจแล้ว', 'ยังไม่ตรวจ']
+            default=['ยังไม่ตรวจ']
         )
         status_filter_67 = st.sidebar.multiselect(
             'สถานะการตรวจสอบปี 67',
             ['ตรงตามมาตรฐาน', 'ยังไม่ตรวจ'],
-            default=['ตรงตามมาตรฐาน', 'ยังไม่ตรวจ']
+            default=['ยังไม่ตรวจ']
         )
         # Apply filters
         map_df = filtered_df[
@@ -233,6 +233,7 @@ def main():
             st.sidebar.write(f'จำนวนสถานีทั้งหมด: {len(map_df)}')
             st.sidebar.write(f'จำนวนที่ตรวจแล้ว: {len(map_df[map_df["สถานะ"] == "ตรวจแล้ว"])}')
             st.sidebar.write(f'จำนวนที่ยังไม่ตรวจ: {len(map_df[map_df["สถานะ"] == "ยังไม่ตรวจ"])}')
+            st.sidebar.write(f'จำนวนที่ยังไม่ตรวจปี 2567: {len(map_df[map_df["ตรวจสอบมาตรฐาน 2567"] == "ยังไม่ตรวจ"])}')
         else:
             st.warning('⚠️ ไม่พบข้อมูลสำหรับเงื่อนไขที่เลือก')
 

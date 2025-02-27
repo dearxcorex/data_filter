@@ -1,13 +1,14 @@
 [theme]
-primaryColor = "#FF4B4B"  # Bright red for primary actions
-backgroundColor = "#0E1117"  # Dark background
-secondaryBackgroundColor = "#262730"  # Slightly lighter dark for cards/sections
-textColor = "#FAFAFA"  # Almost white for text
+primaryColor = "#FF4B4B"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
 font = "sans serif"
 
 [server]
+# Remove or comment out this line:
+# base = "dark"  # This is not a valid option
+
+# Other valid server options:
 enableCORS = false
 enableXsrfProtection = false
-
-# Dark theme options
-base = "dark"  # Set base theme to dark

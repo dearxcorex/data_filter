@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 
 
 def show_map_visualization(df):
-
+    df = df.copy()
         # Create a styled legend
     legend_html = """
     <style>
@@ -68,7 +68,14 @@ def show_map_visualization(df):
         prefer_canvas=True,
         )
     
-
+    df['coord_pair'] = df.apply(lambda row:
+                                f"{row['ละติจูด']},{row['ลองจิจูด']}"
+                                if pd.notna(row['ละติจูด']) and pd.notna(row['ลองจิจูด'])
+                                else "missing",
+                                axis=1)
+    coord_count = df['coord_pair'].value_counts()
+    duplicate_coords = coord_count[coord_count > 1].index.tolist()
+    
 
     #add smooth zoom control
     # folium.plugins.SmoothWheelZoom().add_to(m)
@@ -99,21 +106,38 @@ def show_map_visualization(df):
     not_apply_cluster = folium.FeatureGroup(name='🔍 ไม่ยื่นคำขอตรวจแล้ว')
     not_apply_cluster_2 = folium.FeatureGroup(name='🔍 ไม่ยื่นคำขอยังไม่ตรวจ')
 
-
-    #add markers
-    for idx,row in df.iterrows():
-        if pd.notna(row['ละติจูด']) and pd.notna(row['ลองจิจูด']):
-            lat,lon = float(row['ละติจูด']),float(row['ลองจิจูด'])
-            google_maps_link = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
+    for coord_pair in df['coord_pair'].unique():
+        if coord_pair == "missing":
+            continue
+            
+        lat, lon = map(float, coord_pair.split(','))
+        stations_at_location = df[df['coord_pair'] == coord_pair]
+        
+        # Check if this is a duplicate location
+        is_duplicate = coord_pair in duplicate_coords
+        
+        # Create popup content
+        if is_duplicate:
+            # For duplicate locations, show all stations
             popup_content = f"""
             <div style="font-family:'Sarabun', sans-serif; font-size:14px;">
-            <b>ชื่อสถานี:</b> {row['ชื่อสถานี']}<br>
-            <b>ความถี่:</b> {row['ความถี่']} MHz<br>
-            <b>จังหวัด:</b> {row['จังหวัด']}<br>
-            <b>อำเภอ:</b> {row['อำเภอ']}<br>
-            <b>สถานะ:</b> {row['สถานะ']}
-            <br>
-            <a href="{google_maps_link}" target="_blank" style="
+            <b>⚠️ พบ {len(stations_at_location)} สถานีที่มีพิกัดเดียวกัน:</b><br><br>
+            """
+            
+            for idx, row in stations_at_location.iterrows():
+                popup_content += f"""
+                <div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #eee;">
+                <b>ชื่อสถานี:</b> {row['ชื่อสถานี']}<br>
+                <b>ความถี่:</b> {row['ความถี่']} MHz<br>
+                <b>จังหวัด:</b> {row['จังหวัด']}<br>
+                <b>อำเภอ:</b> {row['อำเภอ']}<br>
+                <b>สถานะ:</b> {row['สถานะ']}
+                </div>
+                """
+                
+            popup_content += f"""
+            <a href="https://www.google.com/maps/dir/?api=1&destination={lat},{lon}" 
+               target="_blank" style="
                 background-color: #4285F4;
                 color: white;
                 padding: 8px 12px;
@@ -124,11 +148,50 @@ def show_map_visualization(df):
             ">
             🚗 นำทาง
             </a>
-
             </div>
             """
-
             
+            # Use a special icon for duplicate locations
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=10,
+                popup=folium.Popup(popup_content, max_width=350),
+                color='purple',  # Special color for duplicates
+                fill=True,
+                fill_color='purple',
+                fill_opacity=0.7,
+                weight=2,
+                tooltip=f"⚠️ {len(stations_at_location)} สถานีที่พิกัดเดียวกัน"
+            ).add_to(m)
+            
+        else:
+            # For single locations, use your existing code
+            row = stations_at_location.iloc[0]
+            
+            popup_content = f"""
+            <div style="font-family:'Sarabun', sans-serif; font-size:14px;">
+            <b>ชื่อสถานี:</b> {row['ชื่อสถานี']}<br>
+            <b>ความถี่:</b> {row['ความถี่']} MHz<br>
+            <b>จังหวัด:</b> {row['จังหวัด']}<br>
+            <b>อำเภอ:</b> {row['อำเภอ']}<br>
+            <b>สถานะ:</b> {row['สถานะ']}
+            <br>
+            <a href="https://www.google.com/maps/dir/?api=1&destination={lat},{lon}" 
+               target="_blank" style="
+                background-color: #4285F4;
+                color: white;
+                padding: 8px 12px;
+                text-decoration: none;
+                border-radius: 4px;
+                display: inline-block;
+                margin-top: 5px;
+            ">
+            🚗 นำทาง
+            </a>
+            </div>
+            """
+            
+            # Determine marker color based on your existing logic
             if row['ยื่นคำขอ'] == 'ไม่ยื่น' and row['สถานะ'] == 'ยังไม่ตรวจ':
                 icon_color = 'black'
                 marker_group = not_apply_cluster_2
@@ -142,9 +205,8 @@ def show_map_visualization(df):
                 icon_color = 'green'
                 marker_group = inspected_cluster
             
-            
             folium.CircleMarker(
-                location=[row['ละติจูด'], row['ลองจิจูด']],
+                location=[lat, lon],
                 radius=8,
                 popup=folium.Popup(popup_content, max_width=300),
                 color=icon_color,
@@ -153,7 +215,6 @@ def show_map_visualization(df):
                 fill_opacity=0.7,
                 weight=2,
                 tooltip=row['ชื่อสถานี']
-
             ).add_to(marker_group)
 
     inspected_cluster.add_to(m)
@@ -183,6 +244,16 @@ def show_map_visualization(df):
         key='main_map',
         )
 
+    # Optional: Display a summary of duplicate locations
+    if duplicate_coords and duplicate_coords[0] != "missing":
+        with st.expander("⚠️ สถานีที่มีพิกัดซ้ำกัน"):
+            for coord in duplicate_coords:
+                if coord == "missing":
+                    continue
+                stations = df[df['coord_pair'] == coord]
+                st.write(f"**พิกัด: {coord}** - {len(stations)} สถานี:")
+                st.dataframe(stations[['ชื่อสถานี', 'ความถี่', 'จังหวัด', 'อำเภอ']])
+
 
 
 
@@ -208,7 +279,7 @@ def main():
         )
         
         status_filter = st.sidebar.multiselect(
-            'สถานะการตรวจสอบ',
+            'สถานะการตรวจสอบปี68',
             ['ตรวจแล้ว', 'ยังไม่ตรวจ'],
             default=['ยังไม่ตรวจ']
         )

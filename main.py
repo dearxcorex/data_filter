@@ -99,8 +99,8 @@ def show_statisticsshow_dashboard(df):
     st.sidebar.write(f"จำนวนที่ไม่ยื่น: {not_applied}")
 
     #Option: Add percentage 
-    not_applied_percentage = (not_applied/len(df)*100)
-    st.sidebar.write(f"ร้อยละที่ไม่ยื่น: {not_applied_percentage:.1f}%")
+    station_not_applied = df[(df['ยื่นคำขอ'] == 'ไม่ยื่น') & (df['สถานะ'] == 'ตรวจแล้ว')] 
+    st.sidebar.write(f"ตรวจแล้ว ที่ไม่ยื่น: {len(station_not_applied)}")
 
     # Add province-wise statistics
     st.subheader("สถิติรายจังหวัดสถานีที่ตรวจแล้ว")
@@ -131,7 +131,7 @@ def show_visualization(filtered_df):
     # Visualization type selector
     viz_type = st.selectbox(
         "Select Visualization Type",
-        [ "District Summary", "Inspection Summary"]
+        [ "District Summary"]
     )
 
     if not filtered_df.empty:

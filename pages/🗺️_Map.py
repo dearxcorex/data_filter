@@ -86,7 +86,7 @@ def show_map_visualization(df):
         strings={'title':'ตำแหน่งของคุณ'},
         position="topleft",
         flyTo=False,
-        drawCircle=True,
+        drawCircle=False,
         showPopup=True,
         locate_options={
             'enableHighAccuracy':True,
@@ -283,10 +283,11 @@ def main():
             ['ตรวจแล้ว', 'ยังไม่ตรวจ'],
             default=['ยังไม่ตรวจ']
         )
+        
         status_filter_67 = st.sidebar.multiselect(
             'สถานะการตรวจสอบปี 67',
             ['ตรงตามมาตรฐาน', 'ยังไม่ตรวจ'],
-            default=['ยังไม่ตรวจ']
+            default=['ยังไม่ตรวจ','ตรงตามมาตรฐาน']
         )
         # Apply filters
         map_df = filtered_df[

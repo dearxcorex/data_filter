@@ -67,6 +67,8 @@ def show_statisticsshow_dashboard(df):
 
     add_refresh_section()
 
+    df_not_applied  = df[(df['ยื่นคำขอ'] == 'ไม่ยื่น') & (df['สถานะ'] == 'ตรวจแล้ว')] 
+
     # Create three columns for statistics
     col1, col2, col3 = st.columns(3)
     
@@ -78,7 +80,7 @@ def show_statisticsshow_dashboard(df):
         )
         
     with col2:
-        inspected = len(df[df['สถานะ'] == 'ตรวจแล้ว'])
+        inspected = len(df[(df['สถานะ'] == 'ตรวจแล้ว')]) - len(df_not_applied)
         st.metric(
             label="ตรวจแล้ว ปี 2568",
             value=inspected,
@@ -99,17 +101,16 @@ def show_statisticsshow_dashboard(df):
     st.sidebar.write(f"จำนวนที่ไม่ยื่น: {not_applied}")
 
     #Option: Add percentage 
-    station_not_applied = df[(df['ยื่นคำขอ'] == 'ไม่ยื่น') & (df['สถานะ'] == 'ตรวจแล้ว')] 
-    st.sidebar.write(f"ตรวจแล้ว ที่ไม่ยื่น: {len(station_not_applied)}")
+    st.sidebar.write(f"ตรวจแล้ว ที่ไม่ยื่น: {len(df_not_applied)}")
 
     # Add province-wise statistics
     st.subheader("สถิติรายจังหวัดสถานีที่ตรวจแล้ว")
     province_stats = df.groupby('จังหวัด').agg({
         'ชื่อสถานี': 'count',
-        'สถานะ': lambda x: (x == 'ตรวจแล้ว').sum()
+        'สถานะ': lambda x: ((x == 'ตรวจแล้ว') & (df.loc[x.index, 'ยื่นคำขอ'] != 'ไม่ยื่น')).sum(),
+        'ยื่นคำขอ': lambda x: (x == 'ไม่ยื่น').sum()
     }).reset_index()
-    province_stats.columns = ['จังหวัด', 'จำนวนสถานีทั้งหมด', 'จำนวนที่ตรวจแล้ว']
-    province_stats['ร้อยละที่ตรวจแล้ว'] = (province_stats['จำนวนที่ตรวจแล้ว'] / province_stats['จำนวนสถานีทั้งหมด'] * 100).round(1)
+    province_stats.columns = ['จังหวัด', 'จำนวนสถานีทั้งหมด', 'จำนวนที่ตรวจแล้ว(ตามแผน)', 'จำนวนที่ไม่ยื่นคำขอ']
     st.dataframe(province_stats, use_container_width=True)
 
 

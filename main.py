@@ -70,7 +70,7 @@ def show_statisticsshow_dashboard(df):
     df_not_applied  = df[(df['ยื่นคำขอ'] == 'ไม่ยื่น') & (df['สถานะ'] == 'ตรวจแล้ว')] 
 
     # Create three columns for statistics
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         total_stations = len(df)
@@ -84,7 +84,7 @@ def show_statisticsshow_dashboard(df):
         st.metric(
             label="ตรวจแล้ว ปี 2568",
             value=inspected,
-            delta=f"{(inspected/len(df)*100):.1f}%"
+            delta=f"{(inspected/200*100):.1f}%"
         )
         
     with col3:
@@ -92,8 +92,28 @@ def show_statisticsshow_dashboard(df):
         st.metric(
             label="ยังไม่ได้ตรวจ ปี 2568",
             value=not_inspected,
-            delta=f"{(not_inspected/len(df)*100):.1f}%"
+            delta=f"{(not_inspected/200*100):.1f}%"
         )
+    with col4:
+        total_stations = len(df[
+            (df['ตรวจสอบมาตรฐาน 2567'] == "ตรงตามมาตรฐาน") & 
+            (df['สถานะ'] == 'ตรวจแล้ว') &
+            (df['ยื่นคำขอ'] != 'ไม่ยื่น')
+        ]) 
+        st.metric(
+            label="สถานีที่ตรวจซ้ำปี 67",
+            value=total_stations
+        ) 
+    with col5:
+        total_stations = len(df[
+            (df['ตรวจสอบมาตรฐาน 2567'] == "ยังไม่ตรวจ") & 
+            (df['สถานะ'] == 'ตรวจแล้ว') &
+            (df['ยื่นคำขอ'] != 'ไม่ยื่น')
+        ]) 
+        st.metric(
+            label="สถานีที่ตรวจไม่ซ้ำปี 67",
+            value=total_stations
+        ) 
 
     #Add sidebar statistics 
     st.sidebar.markdown("---")
@@ -125,6 +145,7 @@ def show_statisticsshow_dashboard(df):
         st.write(f"ความคืบหน้า: {progress:.1%}")
 
 
+    
 
 def show_visualization(filtered_df):
     st.subheader("📊 Data Visualization")
